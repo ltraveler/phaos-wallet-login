@@ -95,7 +95,7 @@ function App() {
     // sign out and rederict to http://localhost:3000/login?a= + base64 encoded address
     // address is base64 encoded
     signOut();
-    window.location.href = "http://localhost:3000/login?a=" + btoa(user.address);
+    window.location.href = "https://www.phaos.app/login?a=" + btoa(user.address);
   }
 
 }
