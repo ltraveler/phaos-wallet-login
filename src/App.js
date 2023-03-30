@@ -1,34 +1,44 @@
-import React, { useEffect,useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useDispatch, useSelector } from 'react-redux';
-import { ToastContainer } from 'react-toastify';
-import { sliceName as generalSliceName } from './core/reducer';
-import { actionNames } from './core/constants';
-import { getAuthLocalStorage, removeAuthLocalStorage, getExpiresCurrentUnixMilli, truncateAddress } from './core/utilities';
-import { appConfigurations } from './core/constants';
+import React, { useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useDispatch, useSelector } from "react-redux";
+import { ToastContainer } from "react-toastify";
+import { sliceName as generalSliceName } from "./core/reducer";
+import { actionNames } from "./core/constants";
+import {
+  getAuthLocalStorage,
+  removeAuthLocalStorage,
+  getExpiresCurrentUnixMilli,
+  truncateAddress,
+} from "./core/utilities";
+import { appConfigurations } from "./core/constants";
 
-import './App.css';
-import 'react-toastify/dist/ReactToastify.css';
+import "./App.css";
+import "react-toastify/dist/ReactToastify.css";
 function App() {
   const dispatch = useDispatch();
-  const user = useSelector(state => state.general.user);
-  const users = useSelector(state => state.general.data.users);
-  const tokensSecured = useSelector(state => state.general.tokensSecured);
+  const user = useSelector((state) => state.general.user);
+  const users = useSelector((state) => state.general.data.users);
+  const tokensSecured = useSelector((state) => state.general.tokensSecured);
 
-  const node_rpc = "https://restricted.idena.io";
-  const node_key = "idena-restricted-node-key";
+  const node_rpc =
+    process.env.REACT_APP_SHARED_API_URL || "https://restricted.idena.io";
+  const node_key =
+    process.env.REACT_APP_SHARED_API_KEY || "idena-restricted-node-key";
   const [smartContract, setSmartContract] = useState("");
-
-
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const idenaAuthToken = urlParams.get('token');
+    const idenaAuthToken = urlParams.get("token");
     const { tokens } = getAuthLocalStorage();
     if (tokens) {
-      const { expiresUnixMilli, currentUnixMilli } = getExpiresCurrentUnixMilli(tokens.refresh.expires);
+      const { expiresUnixMilli, currentUnixMilli } = getExpiresCurrentUnixMilli(
+        tokens.refresh.expires
+      );
       if (expiresUnixMilli - 10000 > currentUnixMilli) {
-        dispatch({ type: actionNames[generalSliceName].updateTokensSecured, payload: true });
+        dispatch({
+          type: actionNames[generalSliceName].updateTokensSecured,
+          payload: true,
+        });
         dispatch({ type: actionNames.refreshTokens });
         return;
       }
@@ -43,14 +53,20 @@ function App() {
     let intervalId;
     if (tokensSecured) {
       const { user } = getAuthLocalStorage();
-      dispatch({ type: actionNames[generalSliceName].updateUser, payload: user });
+      dispatch({
+        type: actionNames[generalSliceName].updateUser,
+        payload: user,
+      });
       intervalId = setInterval(() => {
         dispatch({ type: actionNames.refreshTokens });
       }, appConfigurations.refreshTokensMinutes * 60 * 1000);
 
       dispatch({ type: actionNames.getData });
     } else {
-      dispatch({ type: actionNames[generalSliceName].updateUser, payload: null });
+      dispatch({
+        type: actionNames[generalSliceName].updateUser,
+        payload: null,
+      });
       intervalId && clearInterval(intervalId);
 
       dispatch({ type: actionNames[generalSliceName].clearData });
@@ -62,13 +78,16 @@ function App() {
     const token = uuidv4();
     const params = new URLSearchParams({
       token,
-      callback_url: encodeURIComponent(`${appConfigurations.localBaseUrl}?token=${token}`),
+      callback_url: encodeURIComponent(
+        `${appConfigurations.localBaseUrl}?token=${token}`
+      ),
       nonce_endpoint: `${appConfigurations.apiBaseUrl}/auth/start-session`,
       authentication_endpoint: `${appConfigurations.apiBaseUrl}/auth/authenticate`,
-      favicon_url: `${appConfigurations.localBaseUrl}/favicon.ico`
+      favicon_url: `${appConfigurations.localBaseUrl}/favicon.ico`,
     });
 
-    window.location.href = `${appConfigurations.idenaSignInUrl}?` + params.toString();
+    window.location.href =
+      `${appConfigurations.idenaSignInUrl}?` + params.toString();
   };
 
   const signOut = () => {
@@ -82,7 +101,13 @@ function App() {
           <div className="section_lead__header text-center">
             <nav>
               <div className="SignInButtonDiv">
-                {tokensSecured ? <button onClick={() => signOut()}>Sign Out</button> : <button onClick={() => idenaSignIn()}>Sign in with Idena</button>}
+                {tokensSecured ? (
+                  <button onClick={() => signOut()}>Sign Out</button>
+                ) : (
+                  <button onClick={() => idenaSignIn()}>
+                    Sign in with Idena
+                  </button>
+                )}
               </div>
             </nav>
           </div>
@@ -90,14 +115,15 @@ function App() {
         <ToastContainer />
       </div>
     );
-  }
-  else {
+  } else {
     // sign out and rederict to http://localhost:3000/login?a= + base64 encoded address
     // address is base64 encoded
     signOut();
-    window.location.href = "https://www.phaos.app/login?a=" + btoa(user.address);
+    window.location.href =
+      (process.env.REACT_APP_WALLET_DOMAIN || "https://www.phaos.app") +
+      "/login?a=" +
+      btoa(user.address);
   }
-
 }
 
 export default App;
